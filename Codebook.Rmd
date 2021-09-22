@@ -1,0 +1,147 @@
+---
+title: "Codebook"
+author: "Gustavo Niño"
+date: "22/9/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Packages Used
+
+For the development of the current project where used the following libraries:
+
+```{r}
+library(plyr)
+library(dplyr)
+```
+
+## Data Source
+
+The data was downloaded from the following link: <https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip>
+Some additional Information about the data can be found here: <http://archive.ics.uci.edu/ml/datasets/Human+Activity+Recognition+Using+Smartphones>
+
+```{r}
+if(!file.exists("./w4project")){if(!file.exists("./UCI HAR Dataset")){dir.create("./w4project")}}
+if(file.exists("./w4project")){setwd("./w4project")}
+w4purl<-"https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip"
+if(!file.exists("./w4datasets.zip")){download.file(w4purl, "./w4datasets.zip", method="curl")}
+content<-list.files(path=getwd(), pattern= "*.zip", full.names = TRUE)
+ldply(.data=content, .fun = unzip, exdir =getwd())
+pathuci<-file.path(getwd(), "/UCI HAR Dataset")
+
+```
+
+From the available data, in this project where used the following files:
+
+###   Training Datasets:
+    train/X_train.txt
+    train/y_train.txt
+    train/subject_train.txt
+
+###   Test Datasets:
+    test/X_test.txt
+    test/y_test.txt
+    test/subject_test.txt
+
+###   Other Data Properties
+    activity_labels.txt
+    features.txt
+    
+```{r}
+files<-list.files(path=pathuci, full.names = TRUE, recursive=TRUE)
+
+train_set<-read.table(files[27], header = FALSE)
+train_labs<-read.table(files[28], header = FALSE)
+test_set<-read.table(files[15], header = FALSE)
+test_labs<-read.table(files[16], header = FALSE)
+sub_test<-read.table(files[14], header = FALSE)
+sub_train<-read.table(files[26], header = FALSE)
+act_labs<-read.table(files[1], header = FALSE)
+feats<-read.table(files[2], header = FALSE)
+```
+
+(For a deeper understanding of the features.txt content it is adviced to take a look into features_info.txt file). To explore the data loaded there was used the 'str()' function, but wont be showed in this file.
+
+## 0. Label Variables
+
+Before the merging took place, there where labeled the subject and activity variables, to allow a better combination of the data frames in the following steps of the data processing.
+
+```{r}
+names(sub_test) = c("subject")
+names(sub_train) = c("subject")
+x<-as.list(feats$V2)
+names(test_set) = x
+names(train_set) = x
+colnames(act_labs)[2]<-"activity"   
+```
+
+(Note that the 'colnames(act_labs)[2]<-"activity"' is part of step 2.)
+
+## 1.  Merges the training and the test sets to create one data set.
+
+For this step first there where created one dataset with training data, and a second dataset with test data, by means of 'cbind()' function, then they where combined by 'rbind()' function.
+
+```{r}
+training_ds<-cbind(sub_train, cbind(train_set, train_labs))
+test_ds<-cbind(sub_test, cbind(test_set, test_labs))
+joined_ds<-rbind(test_ds, training_ds)
+```
+
+## 2. Uses descriptive activity names to name the activities in the data set
+
+```{r}
+joined_ds<-merge(joined_ds, act_labs, by.x=563, by.y = 1)
+joined_ds<-joined_ds[2:564]
+
+```
+
+## 3. Extracts only the measurements on the mean and standard deviation for each measurement. 
+
+```{r}
+extracted_ds<- select(joined_ds, "subject", contains("mean")|contains("std"), "activity")
+```
+
+## 4. Appropriately labels the data set with descriptive variable names. 
+
+```{r}
+names(joined_ds) = gsub("^t", "time_", names(joined_ds))
+names(joined_ds) = gsub("^f", "frecuency_", names(joined_ds))
+names(joined_ds) = gsub("Acc", "acceleration_", names(joined_ds))
+names(joined_ds) = gsub("Body", "body_", names(joined_ds))
+names(joined_ds) = gsub("body_body_", "body_", names(joined_ds))
+names(joined_ds) = gsub("Gravity", "gravity_", names(joined_ds))
+names(joined_ds) = gsub("Gyro", "gyro_", names(joined_ds))
+names(joined_ds) = gsub("Jerk", "jerk_", names(joined_ds))
+names(joined_ds) = gsub("Mag", "magnitude_", names(joined_ds))
+names(joined_ds) = gsub("Gyro", "gyro_", names(joined_ds))
+```
+
+
+## 5. From the data set in step 4, creates a second, independent tidy data set with the average of each variable for each activity and each subject.
+
+```{r}
+indy_tds<-aggregate(joined_ds[, 2:562],list(c(joined_ds$subject), joined_ds$activity), mean)
+colnames(indy_tds)[1]<-"subject"
+colnames(indy_tds)[2]<-"activity"
+```
+
+## DATA SET FILE CREATION:
+
+```{r}
+write.table(joined_ds, file="UCI HAR Dataset/tidy_data.txt", row.names=FALSE)
+```
+
+
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
