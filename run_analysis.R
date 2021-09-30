@@ -14,7 +14,7 @@ library(dplyr)
 if(!file.exists("./w4project")){if(!file.exists("./UCI HAR Dataset")){dir.create("./w4project")}}
 if(file.exists("./w4project")){setwd("./w4project")}
 w4purl<-"https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip"
-if(!file.exists("./w4datasets.zip")){download.file(w4purl, "./w4datasets.zip", method="curl")}
+if(!file.exists("./w4datasets.zip")){download.file(w4purl, "./w4datasets.zip")}
 content<-list.files(path=getwd(), pattern= "*.zip", full.names = TRUE)
 ldply(.data=content, .fun = unzip, exdir =getwd())
 pathuci<-file.path(getwd(), "/UCI HAR Dataset")
@@ -109,4 +109,4 @@ colnames(indy_tds)[2]<-"activity"
 head(str(indy_tds))
 
 ## DATA SET FILE CREATION:
-write.table(joined_ds, file="UCI HAR Dataset/tidy_data.txt", row.names=FALSE)
+write.table(indy_tds, file="UCI HAR Dataset/tidy_data.txt", row.names=FALSE)
